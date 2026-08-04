@@ -31,7 +31,6 @@ function doGet(e) {
     else if (accion === 'validarempleado') resultado = validarEmpleado_(p.clave);
     else if (accion === 'corridas') resultado = obtenerCorridas_(p.clave, p.marca);
     else if (accion === 'calcular') resultado = calcularFactores_(p.clave, p.marca, p.corrida, p.ingreso);
-    else if (accion === 'estadisticas') resultado = obtenerEstadisticas_(p.clave);
     else resultado = { ok: false, mensaje: 'Acción no válida.' };
 
     return responder_(resultado, p.callback);
@@ -148,8 +147,6 @@ function calcularFactores_(claveEntrada, marcaEntrada, corridaEntrada, ingresoEn
     if (isFinite(valorMin)) ingresoMinimoPP = valorMin;
   }
 
-  registrarConsulta_(empleado.empleado, marca, corrida);
-
   return {
     ok: true,
     empleado: empleado.empleado,
@@ -216,65 +213,4 @@ function responder_(objeto, callback) {
     return ContentService.createTextOutput(String(callback) + '(' + json + ')').setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
   return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
-}
-
-
-function registrarConsulta_(empleado, marca, corrida) {
-  try {
-    const libro = SpreadsheetApp.openById(CONFIG.EMPLEADOS_ID);
-    let hoja = libro.getSheetByName('ESTADISTICAS');
-    if (!hoja) {
-      hoja = libro.insertSheet('ESTADISTICAS');
-      hoja.appendRow(['FECHA', 'CLAVE', 'NOMBRE', 'ROL', 'MARCA', 'CORRIDA']);
-      hoja.setFrozenRows(1);
-    }
-    hoja.appendRow([new Date(), empleado.clave, empleado.nombre, empleado.rol, CONFIG.TABLAS[marca].nombre, corrida]);
-  } catch (e) {
-    console.log('No se pudo registrar la consulta: ' + e.message);
-  }
-}
-
-function obtenerEstadisticas_(claveEntrada) {
-  const empleado = validarEmpleado_(claveEntrada);
-  if (!empleado.ok) return empleado;
-  if (empleado.empleado.rol !== 'ADMIN') return { ok: false, mensaje: 'Esta sección es exclusiva para administradores.' };
-
-  const libro = SpreadsheetApp.openById(CONFIG.EMPLEADOS_ID);
-  const hoja = libro.getSheetByName('ESTADISTICAS');
-  if (!hoja || hoja.getLastRow() < 2) {
-    return { ok: true, resumen: { hoy: 0, total: 0, empleadosUnicos: 0, horaPico: 'Sin datos' }, porMarca: [], topCorridas: [], actualizado: Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'America/Mexico_City', 'dd/MM/yyyy HH:mm') };
-  }
-
-  const datos = hoja.getRange(2, 1, hoja.getLastRow() - 1, 6).getValues();
-  const zona = Session.getScriptTimeZone() || 'America/Mexico_City';
-  const hoyTexto = Utilities.formatDate(new Date(), zona, 'yyyy-MM-dd');
-  const empleados = new Set();
-  const marcas = {};
-  const corridas = {};
-  const horas = {};
-  let hoy = 0;
-
-  datos.forEach(f => {
-    const fecha = f[0] instanceof Date ? f[0] : new Date(f[0]);
-    if (isNaN(fecha.getTime())) return;
-    const clave = limpiarClave_(f[1]);
-    const marca = String(f[4] || 'Sin marca');
-    const corrida = String(f[5] || 'Sin corrida');
-    empleados.add(clave);
-    marcas[marca] = (marcas[marca] || 0) + 1;
-    corridas[corrida] = (corridas[corrida] || 0) + 1;
-    const hora = Utilities.formatDate(fecha, zona, 'HH:00');
-    horas[hora] = (horas[hora] || 0) + 1;
-    if (Utilities.formatDate(fecha, zona, 'yyyy-MM-dd') === hoyTexto) hoy++;
-  });
-
-  const ordenar = obj => Object.keys(obj).map(k => ({ nombre: k, valor: obj[k] })).sort((a, b) => b.valor - a.valor);
-  const listaHoras = ordenar(horas);
-  return {
-    ok: true,
-    resumen: { hoy, total: datos.length, empleadosUnicos: empleados.size, horaPico: listaHoras.length ? listaHoras[0].nombre : 'Sin datos' },
-    porMarca: ordenar(marcas),
-    topCorridas: ordenar(corridas).slice(0, 8),
-    actualizado: Utilities.formatDate(new Date(), zona, 'dd/MM/yyyy HH:mm')
-  };
 }
