@@ -2,37 +2,104 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#5b21b6">
-  <meta name="description" content="Asistente de consulta de factores PP y PK por corrida.">
-  <title>Asistente PP / PK</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#32146f">
+  <meta name="description" content="Asegura tu Factor: consulta profesional de factores PP y PK por corrida.">
+  <title>Asegura tu Factor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="aurora aurora-one"></div><div class="aurora aurora-two"></div>
+  <div class="background-grid" aria-hidden="true"></div>
+  <div class="glow glow-a" aria-hidden="true"></div>
+  <div class="glow glow-b" aria-hidden="true"></div>
+
   <main class="app-shell">
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand-icon">PP</div>
-        <div><h1>Asistente PP / PK</h1><p>Consulta estimada por corrida</p></div>
+    <aside class="showcase">
+      <div class="showcase-top">
+        <div class="logo-lockup">
+          <div class="logo-mark" aria-hidden="true">
+            <svg viewBox="0 0 64 64" role="img">
+              <path d="M32 4 54 12v17c0 14.2-8.7 25.4-22 31C18.7 54.4 10 43.2 10 29V12L32 4Z" fill="currentColor" opacity=".18"/>
+              <path d="M32 8.8 49.5 15v14c0 11.4-6.5 20.6-17.5 26-11-5.4-17.5-14.6-17.5-26V15L32 8.8Z" fill="none" stroke="currentColor" stroke-width="3"/>
+              <path d="m20.5 34 7-7 5.5 5.5 11-12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M39 20.5h5.5V26" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <span class="eyebrow">CONSULTA INTELIGENTE</span>
+            <h1>Asegura tu <strong>Factor</strong></h1>
+          </div>
+        </div>
+
+        <div class="hero-copy">
+          <span class="hero-badge"><i></i> PP · PK por corrida</span>
+          <h2>Conoce tu factor antes de cerrar tu jornada.</h2>
+          <p>Identifica tu marca, selecciona tu corrida y consulta de forma rápida el PP y PK correspondiente a tu ingreso sin IVA.</p>
+        </div>
       </div>
-      <button id="restartBtn" class="icon-btn" title="Reiniciar consulta" aria-label="Reiniciar consulta">↻</button>
-    </header>
 
-    <section class="chat-card">
-      <div id="chat" class="chat" aria-live="polite"></div>
-      <div id="quickActions" class="quick-actions"></div>
-      <form id="inputForm" class="composer" autocomplete="off">
-        <input id="messageInput" inputmode="numeric" placeholder="Escribe tu clave de empleado" aria-label="Mensaje">
-        <button id="sendBtn" type="submit">Enviar</button>
-      </form>
+      <div class="feature-list">
+        <div class="feature">
+          <span class="feature-icon">01</span>
+          <div><b>Acceso personalizado</b><small>Validación por clave y marca.</small></div>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">02</span>
+          <div><b>Resultado inmediato</b><small>Factores según tu rango de ingreso.</small></div>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">03</span>
+          <div><b>Consulta segura</b><small>Información clara y confidencial.</small></div>
+        </div>
+      </div>
+
+      <div class="showcase-footer">
+        <span class="status-dot"></span>
+        Servicio de consulta disponible
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <header class="topbar">
+        <div class="mobile-brand">
+          <div class="mobile-mark">AF</div>
+          <div><b>Asegura tu Factor</b><span>Asistente PP · PK</span></div>
+        </div>
+        <div class="assistant-heading">
+          <div class="assistant-avatar">AF<span></span></div>
+          <div><b>Asistente de factores</b><span>En línea · Respuesta inmediata</span></div>
+        </div>
+        <button id="restartBtn" class="restart-btn" type="button" title="Reiniciar consulta" aria-label="Reiniciar consulta">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Reiniciar</span>
+        </button>
+      </header>
+
+      <section class="chat-card" aria-label="Conversación con Asegura tu Factor">
+        <div id="chat" class="chat" aria-live="polite"></div>
+        <div id="quickActions" class="quick-actions"></div>
+        <form id="inputForm" class="composer" autocomplete="off">
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16M14 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <input id="messageInput" inputmode="numeric" placeholder="Escribe tu clave de empleado" aria-label="Mensaje">
+          </div>
+          <button id="sendBtn" type="submit" aria-label="Enviar mensaje">
+            <span>Enviar</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 4 17 8-17 8 3-8-3-8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M7 12h14" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          </button>
+        </form>
+      </section>
+
+      <footer class="legal-note">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 10v6m0-9h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Cálculo informativo. El sueldo final depende de kilómetros, impuestos y descuentos aplicables.
+      </footer>
     </section>
-
-    <footer>Consulta informativa · El cálculo final depende de kilómetros, impuestos y descuentos aplicables.</footer>
   </main>
+
   <script src="config.js"></script>
   <script src="app.js"></script>
 </body>

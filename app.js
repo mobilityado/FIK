@@ -12,11 +12,11 @@ function money(value){return new Intl.NumberFormat('es-MX',{style:'currency',cur
 function escapeHtml(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]))}
 function addMessage(html, who='bot'){
   const row=document.createElement('div'); row.className=`row ${who}`;
-  if(who==='bot') row.innerHTML=`<div class="avatar">IA</div><div class="bubble">${html}</div>`;
+  if(who==='bot') row.innerHTML=`<div class="avatar">AF</div><div class="bubble">${html}</div>`;
   else row.innerHTML=`<div class="bubble">${escapeHtml(html)}</div>`;
   chat.appendChild(row); chat.scrollTop=chat.scrollHeight;
 }
-function showTyping(){const r=document.createElement('div');r.id='typing';r.className='row bot';r.innerHTML='<div class="avatar">IA</div><div class="bubble typing"><i></i><i></i><i></i></div>';chat.appendChild(r);chat.scrollTop=chat.scrollHeight}
+function showTyping(){const r=document.createElement('div');r.id='typing';r.className='row bot';r.innerHTML='<div class="avatar">AF</div><div class="bubble typing"><i></i><i></i><i></i></div>';chat.appendChild(r);chat.scrollTop=chat.scrollHeight}
 function hideTyping(){document.querySelector('#typing')?.remove()}
 function setBusy(b){input.disabled=b;sendBtn.disabled=b}
 function setInput(placeholder,mode='text'){input.placeholder=placeholder;input.inputMode=mode;input.value='';setTimeout(()=>input.focus(),50)}
@@ -78,7 +78,7 @@ async function calculate(value){
 
 function backToRuns(){chooseMarca(state.marca)}
 function showBrandMenu(){state.step='marca';setActions(state.empleado.marcas.map(m=>({label:m.nombre,onClick:()=>chooseMarca(m)})));addMessage('Selecciona la marca que deseas consultar.');setInput('Selecciona una marca');input.disabled=true;sendBtn.disabled=true}
-function reset(){state={step:'clave',clave:'',empleado:null,marca:null,corrida:null,minPP:null};chat.innerHTML='';setActions([]);input.disabled=false;sendBtn.disabled=false;setInput('Escribe tu clave de empleado','numeric');addMessage('👋 Hola. Soy tu asistente de consulta de <strong>factores PP y PK</strong>.<br><br>Para comenzar, escribe tu clave de empleado.')}
+function reset(){state={step:'clave',clave:'',empleado:null,marca:null,corrida:null,minPP:null};chat.innerHTML='';setActions([]);input.disabled=false;sendBtn.disabled=false;setInput('Escribe tu clave de empleado','numeric');addMessage('👋 Hola. Soy <strong>Asegura tu Factor</strong>, tu asistente de consulta de factores <strong>PP y PK</strong>.<br><br>Para comenzar, escribe tu clave de empleado.')}
 
 form.addEventListener('submit',e=>{e.preventDefault();const v=input.value.trim();if(!v)return;if(state.step==='clave')askClave(v);else if(state.step==='ingreso')calculate(v)});
 restartBtn.addEventListener('click',reset);
