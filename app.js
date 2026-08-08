@@ -33,9 +33,9 @@ async function askClave(value){
     const data=await api({accion:'validarEmpleado',clave:state.clave});hideTyping();
     if(!data.ok){addMessage(`🤔 ${escapeHtml(data.mensaje)}`);setInput('Escribe nuevamente tu clave','numeric');return}
     state.empleado=data.empleado;state.step='marca';
-    addMessage(`👋 ¡Hola, <strong>${escapeHtml(data.empleado.nombre)}</strong>! Identifiqué tu acceso correctamente.<br><br>Selecciona la marca que deseas consultar.`);
-    setInput('Selecciona una marca');input.disabled=true;sendBtn.disabled=true;
-    setActions(data.empleado.marcas.map(m=>({label:m.nombre,onClick:()=>chooseMarca(m)})));
+    addMessage(`👋 ¡Hola, <strong>${escapeHtml(data.empleado.nombre)}</strong>! Identifiqué tu acceso correctamente.<br><br>Selecciona la marca que deseas consultar${data.empleado.rol==='ADMIN'?' o abre el reporte administrativo.':'.'}`);
+    setInput('Selecciona una opción');input.disabled=true;sendBtn.disabled=true;
+    showBrandActions();
   }catch(e){hideTyping();addMessage(`⚠️ ${escapeHtml(e.message)} Revisa la URL de la API en <strong>config.js</strong>.`)}finally{if(state.step==='clave')setBusy(false)}
 }
 
@@ -77,7 +77,51 @@ async function calculate(value){
 }
 
 function backToRuns(){chooseMarca(state.marca)}
-function showBrandMenu(){state.step='marca';setActions(state.empleado.marcas.map(m=>({label:m.nombre,onClick:()=>chooseMarca(m)})));addMessage('Selecciona la marca que deseas consultar.');setInput('Selecciona una marca');input.disabled=true;sendBtn.disabled=true}
+function showBrandActions(){
+  const items=state.empleado.marcas.map(m=>({label:m.nombre,onClick:()=>chooseMarca(m)}));
+  if(state.empleado.rol==='ADMIN') items.push({label:'📊 Reporte de la App',onClick:showAppReport});
+  setActions(items);
+}
+function showBrandMenu(){state.step='marca';showBrandActions();addMessage(state.empleado.rol==='ADMIN'?'Selecciona la marca que deseas consultar o abre el reporte administrativo.':'Selecciona la marca que deseas consultar.');setInput('Selecciona una opción');input.disabled=true;sendBtn.disabled=true}
+
+function rankingHtml(items,empty='Sin datos todavía'){
+  if(!items||!items.length)return `<span class="muted-report">${escapeHtml(empty)}</span>`;
+  return items.map((x,i)=>`${i+1}. <strong>${escapeHtml(x.nombre)}</strong> — ${Number(x.cantidad)||0} consulta${Number(x.cantidad)===1?'':'s'}`).join('<br>');
+}
+
+async function showAppReport(){
+  if(!state.empleado||state.empleado.rol!=='ADMIN')return;
+  addMessage('📊 Reporte de la App','user');setActions([]);setBusy(true);showTyping();
+  try{
+    const data=await api({accion:'reporteApp',clave:state.clave});hideTyping();
+    if(!data.ok)throw new Error(data.mensaje);
+    if(data.sinDatos){
+      addMessage(`📊 <strong>Reporte de uso de Asegura tu Factor</strong><br><br>${escapeHtml(data.mensaje||'Todavía no hay información registrada.')}`);
+    }else{
+      const r=data.resumen||{};
+      addMessage(`📊 <strong>Reporte de uso de Asegura tu Factor</strong><br><br>
+        <strong>Resumen general</strong><br>
+        • Accesos registrados: <strong>${Number(r.totalAccesos)||0}</strong><br>
+        • Consultas realizadas: <strong>${Number(r.totalConsultas)||0}</strong><br>
+        • Usuarios únicos: <strong>${Number(r.usuariosUnicos)||0}</strong><br>
+        • Consultas de hoy: <strong>${Number(r.consultasHoy)||0}</strong><br>
+        • Últimos 7 días: <strong>${Number(r.consultas7Dias)||0}</strong><br>
+        • Últimos 30 días: <strong>${Number(r.consultas30Dias)||0}</strong><br>
+        • Consultas que alcanzaron PP: <strong>${Number(r.porcentajeConPP)||0}%</strong><br><br>
+        <strong>🏆 Marcas más consultadas</strong><br>${rankingHtml(data.topMarcas)}<br><br>
+        <strong>🚌 Corridas más consultadas</strong><br>${rankingHtml(data.topCorridas)}<br><br>
+        <strong>👤 Usuarios con más consultas</strong><br>${rankingHtml(data.topUsuarios)}<br><br>
+        <small>Actualizado: ${escapeHtml(data.actualizado||'')}</small>`);
+    }
+    state.step='reporte';setInput('Elige una opción');input.disabled=true;sendBtn.disabled=true;
+    setActions([
+      {label:'Actualizar reporte',onClick:showAppReport},
+      {label:'Consultar una marca',onClick:showBrandMenu},
+      {label:'Nueva consulta',onClick:reset}
+    ]);
+  }catch(e){hideTyping();addMessage(`⚠️ ${escapeHtml(e.message)}`);showBrandMenu()}finally{setBusy(false)}
+}
+
 function reset(){state={step:'clave',clave:'',empleado:null,marca:null,corrida:null,minPP:null};chat.innerHTML='';setActions([]);input.disabled=false;sendBtn.disabled=false;setInput('Escribe tu clave de empleado','numeric');addMessage('👋 Hola. Soy <strong>Asegura tu Factor</strong>, tu asistente de consulta de factores <strong>PP y PK</strong>.<br><br>Para comenzar, escribe tu clave de empleado.')}
 
 form.addEventListener('submit',e=>{e.preventDefault();const v=input.value.trim();if(!v)return;if(state.step==='clave')askClave(v);else if(state.step==='ingreso')calculate(v)});

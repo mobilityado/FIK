@@ -5,6 +5,7 @@
 
 const CONFIG = {
   EMPLEADOS_ID: '1aS0eMo3eVRKQCRlhdo3cUio_WVWcMI2EbIY387PIe2E',
+  ESTADISTICAS_HOJA: 'ESTADISTICAS_APP',
   TABLAS: {
     SUR:       { id: '1WMHBKTjoC6iBcArwZz8iFcU2uj-HiP2fVSRW6TEymSw', nombre: 'SUR' },
     SURVB:     { id: '1rcZGN7S0DMbo9h3MYe549QGE6HgUUDNahSFCBp6kj5c', nombre: 'SUR VB' },
@@ -28,9 +29,13 @@ function doGet(e) {
     let resultado;
 
     if (accion === 'estado') resultado = { ok: true, mensaje: 'API PP/PK activa' };
-    else if (accion === 'validarempleado') resultado = validarEmpleado_(p.clave);
+    else if (accion === 'validarempleado') {
+      resultado = validarEmpleado_(p.clave);
+      if (resultado.ok) registrarEvento_('ACCESO', resultado.empleado);
+    }
     else if (accion === 'corridas') resultado = obtenerCorridas_(p.clave, p.marca);
     else if (accion === 'calcular') resultado = calcularFactores_(p.clave, p.marca, p.corrida, p.ingreso);
+    else if (accion === 'reporteapp') resultado = obtenerReporteApp_(p.clave);
     else resultado = { ok: false, mensaje: 'Acción no válida.' };
 
     return responder_(resultado, p.callback);
@@ -147,7 +152,7 @@ function calcularFactores_(claveEntrada, marcaEntrada, corridaEntrada, ingresoEn
     if (isFinite(valorMin)) ingresoMinimoPP = valorMin;
   }
 
-  return {
+  const resultado = {
     ok: true,
     empleado: empleado.empleado,
     marca: describirMarca_(marca),
@@ -163,6 +168,125 @@ function calcularFactores_(claveEntrada, marcaEntrada, corridaEntrada, ingresoEn
       rangoDesde: factor.limite
     }
   };
+
+  registrarEvento_('CONSULTA', empleado.empleado, {
+    marca: resultado.marca.nombre,
+    marcaCodigo: marca,
+    corrida,
+    ingreso,
+    alcanzoPP: resultado.alcanzoPP ? 'SI' : 'NO'
+  });
+
+  return resultado;
+}
+
+function registrarEvento_(tipo, empleado, extra) {
+  try {
+    const libro = SpreadsheetApp.openById(CONFIG.EMPLEADOS_ID);
+    let hoja = libro.getSheetByName(CONFIG.ESTADISTICAS_HOJA);
+    if (!hoja) {
+      hoja = libro.insertSheet(CONFIG.ESTADISTICAS_HOJA);
+      hoja.appendRow(['FECHA', 'TIPO', 'CLAVE', 'NOMBRE', 'ROL', 'MARCA', 'CODIGO_MARCA', 'CORRIDA', 'INGRESO', 'ALCANZO_PP']);
+      hoja.setFrozenRows(1);
+    }
+    const e = extra || {};
+    hoja.appendRow([
+      new Date(),
+      tipo,
+      empleado.clave || '',
+      empleado.nombre || '',
+      empleado.rol || '',
+      e.marca || '',
+      e.marcaCodigo || '',
+      e.corrida || '',
+      e.ingreso === undefined ? '' : e.ingreso,
+      e.alcanzoPP || ''
+    ]);
+  } catch (error) {
+    console.log('No se pudo registrar estadística: ' + error);
+  }
+}
+
+function obtenerReporteApp_(claveEntrada) {
+  const empleado = validarEmpleado_(claveEntrada);
+  if (!empleado.ok) return empleado;
+  if (empleado.empleado.rol !== 'ADMIN') {
+    return { ok: false, mensaje: 'Este reporte está disponible únicamente para administradores.' };
+  }
+
+  const libro = SpreadsheetApp.openById(CONFIG.EMPLEADOS_ID);
+  const hoja = libro.getSheetByName(CONFIG.ESTADISTICAS_HOJA);
+  if (!hoja || hoja.getLastRow() < 2) {
+    return {
+      ok: true,
+      sinDatos: true,
+      resumen: { totalAccesos: 0, totalConsultas: 0, usuariosUnicos: 0, consultasHoy: 0, consultas7Dias: 0, consultas30Dias: 0 },
+      topMarcas: [], topCorridas: [], topUsuarios: [],
+      mensaje: 'Todavía no hay consultas registradas. Las estadísticas comenzarán a acumularse desde esta versión.'
+    };
+  }
+
+  const datos = hoja.getDataRange().getValues();
+  const ahora = new Date();
+  const inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+  const hace7 = new Date(inicioHoy); hace7.setDate(hace7.getDate() - 6);
+  const hace30 = new Date(inicioHoy); hace30.setDate(hace30.getDate() - 29);
+
+  let totalAccesos = 0, totalConsultas = 0, consultasHoy = 0, consultas7Dias = 0, consultas30Dias = 0, conPP = 0;
+  const usuarios = {}, marcas = {}, corridas = {}, usuariosConsulta = {};
+
+  for (let i = 1; i < datos.length; i++) {
+    const fecha = datos[i][0] instanceof Date ? datos[i][0] : new Date(datos[i][0]);
+    const tipo = String(datos[i][1] || '').toUpperCase();
+    const clave = limpiarClave_(datos[i][2]);
+    const nombre = String(datos[i][3] || '').trim();
+    const marca = String(datos[i][5] || '').trim();
+    const corrida = String(datos[i][7] || '').trim();
+    const alcanzoPP = String(datos[i][9] || '').toUpperCase();
+
+    if (clave) usuarios[clave] = nombre || clave;
+    if (tipo === 'ACCESO') totalAccesos++;
+    if (tipo !== 'CONSULTA') continue;
+
+    totalConsultas++;
+    if (alcanzoPP === 'SI') conPP++;
+    if (isFinite(fecha.getTime())) {
+      if (fecha >= inicioHoy) consultasHoy++;
+      if (fecha >= hace7) consultas7Dias++;
+      if (fecha >= hace30) consultas30Dias++;
+    }
+    if (marca) marcas[marca] = (marcas[marca] || 0) + 1;
+    if (corrida) corridas[corrida] = (corridas[corrida] || 0) + 1;
+    if (clave) {
+      const etiqueta = nombre ? nombre + ' · ' + clave : clave;
+      usuariosConsulta[etiqueta] = (usuariosConsulta[etiqueta] || 0) + 1;
+    }
+  }
+
+  return {
+    ok: true,
+    sinDatos: false,
+    resumen: {
+      totalAccesos,
+      totalConsultas,
+      usuariosUnicos: Object.keys(usuarios).length,
+      consultasHoy,
+      consultas7Dias,
+      consultas30Dias,
+      porcentajeConPP: totalConsultas ? Math.round((conPP / totalConsultas) * 1000) / 10 : 0
+    },
+    topMarcas: topConteo_(marcas, 5),
+    topCorridas: topConteo_(corridas, 5),
+    topUsuarios: topConteo_(usuariosConsulta, 5),
+    actualizado: Utilities.formatDate(ahora, Session.getScriptTimeZone() || 'America/Mexico_City', 'dd/MM/yyyy HH:mm')
+  };
+}
+
+function topConteo_(objeto, limite) {
+  return Object.keys(objeto)
+    .map(nombre => ({ nombre, cantidad: objeto[nombre] }))
+    .sort((a, b) => b.cantidad - a.cantidad || a.nombre.localeCompare(b.nombre))
+    .slice(0, limite);
 }
 
 function buscarColumna_(encabezados, candidatos) {
